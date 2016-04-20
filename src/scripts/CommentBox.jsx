@@ -1,48 +1,14 @@
 import React from 'react';
-import marked from 'marked';
 import $ from 'jquery';
-// import AwesomeComponent from './AwesomeComponent.jsx';
-
-const Comment = (props) => {
-  const rawMarkeup = marked(props.children.toString(), { sanitize: true });
-  return (
-    <div className="comment">
-      <h2 className="commentAuthor">{props.author}</h2>
-      <span dangerouslySetInnerHTML={{ __html: rawMarkeup }} />
-    </div>
-  );
-};
-
-Comment.propTypes = {
-  author: React.PropTypes.string.isRequired,
-  children: React.PropTypes.string.isRequired
-};
-
-const CommentList = (props) => {
-  const commentNodes = props.data.map((comment) => (
-    <Comment author={comment.author} key={comment.id}>
-      {comment.text}
-    </Comment>
-  ));
-  return (
-    <div className="commentList">
-      {commentNodes}
-    </div>
-  );
-};
-
-CommentList.propTypes = {
-  data: React.PropTypes.array
-};
-
-const CommentForm = () =>
-  <div>comment form</div>;
+import CommentList from './CommentList.jsx';
+import CommentForm from './CommentForm.jsx';
 
 class CommentBox extends React.Component {
   static get propTypes() {
     return {
       url: React.PropTypes.string,
-      pollInterval: React.PropTypes.number
+      pollInterval: React.PropTypes.number,
+      comment: React.PropTypes.object
     };
   }
 
@@ -70,12 +36,28 @@ class CommentBox extends React.Component {
     });
   }
 
+  handleCommentSubmit(comment) {
+    const comments = this.state.data;
+    const newComments = comments.concat([comment]);
+    this.setState({ data: newComments });
+    $.ajax({
+      url: this.props.url,
+      dataType: 'json',
+      type: 'POST',
+      data: comment,
+      success: (data) => { this.setState({ data }); },
+      error: (xhr, status, err) => {
+        console.error(this.props.url, status, err.toString());
+      }
+    });
+  }
+
   render() {
     return (
       <div className="commentBox">
         <h1>Comments</h1>
         <CommentList data={this.state.data} />
-        <CommentForm />
+        <CommentForm onCommentSubmit={(e) => this.handleCommentSubmit(e)} />
       </div>
     );
   }
